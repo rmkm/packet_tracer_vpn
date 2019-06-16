@@ -37,7 +37,7 @@ IPsecでは Diffie-Hellman (DH) を採用しています。これは暗号鍵を
 MD5とSHAなどがあります。認証技術と併用して使用します。  
 チュートリアルではSHAを使用します。
 1. **認証方式**  
-HMAC ( Keyed-Hashing for Message Authentication Code  )とデジタル署名があり，HMACは共通鍵を使用し，デジタル署名は公開鍵を使用します。HMACとはハッシュ関数と共通鍵を組み合わせて計算するMACのことです。  
+HMAC ( Keyed-Hashing for Message Authentication Code  )とデジタル署名があり、HMACは共通鍵を使用し、デジタル署名は公開鍵を使用します。HMACとはハッシュ関数と共通鍵を組み合わせて計算するMACのことです。  
 チュートリアルではSHAを使用したHMACを使用します。
 
 ## 2. Security Architecture for IP (IPsec)
@@ -52,7 +52,7 @@ IPsecは、暗号化システムの技術によりネットワーク層にて、
 | AH | パケットが改ざんされていないかどうか認証を行う。(HMAC)<br>パケットの暗号化はできない。 | IPプロトコル番号 51 |
 | ESP | パケットが改ざんされていないかどうか認証を行う。(HMAC)<br>パケットのペイロード部の暗号化 ( DES or 3DES or AES ) を行う。 | IPプロトコル番号 50 |
 
-RFC2406とRFC4303形式のESPには認証トレーラ機能があるので，通常はAHを併用せず，ESPのみを使用します。
+RFC2406とRFC4303形式のESPには認証トレーラ機能があるので、通常はAHを併用せず、ESPのみを使用します。
 
 ### 2.2. IPsecの通信モード
 IPsecにおける通信モードには、トランスポートモードとトンネルモードの2つのモードがあります。
@@ -64,7 +64,7 @@ IPsecによる通信はトンネルモードを利用していることが多い
 ### 3.1. Internet Key Exchange (IKE)
 ここからIPsec-VPNの流れを説明します。IPsec-VPNはVPNゲートウェイ間でコネクションを確立することで達成されます。このコネクションのことをSecurity Association (SA) と呼びます。IPsecの全ての通信はこのSAを使用する事になります。SAは一方通行のトンネルであるため、パケットを送受信するためには送信用のSA、受信用のSAの合計2つが必要になります。  
 このSAを自動的に生成、管理、更新することを可能にしたのがIKEです。認証用のセッション鍵 (HMAC) と暗号化用のセッション鍵のこれら両方の鍵の生成、交換、更新がIKEにより自動で行われます。IKEによるSAの生成はphase 1 とphase 2 のステップがあります。phase 1 では各種パラメータを交換しISAKMP SAを生成します。phase 2 ではそのISAKMP SA上で各種パラメータを交換してIPsec SAを生成します。  
-*ISAKMP = Internet Security Association and Key Management Protocol  
+ISAKMP = Internet Security Association and Key Management Protocol  
 ### 3.2. ISAKMPメッセージのフォーマット
 ISAKMPメッセージは、IKE phase 1 、phase 2 のメッセージ交換の際に送受信されます。このメッセージはISAKMPヘッダとISAKMPペイロードで構成され、送信元、宛先ともUDPポート500を使用して伝送します。
 ![ISAKMP](images/ISAKMP.png)  
@@ -105,6 +105,183 @@ IKE フェーズ2では、ネゴシエーションによりIPsec SAに必要な�
 | DHグループ | フェーズ2では必須ではない。共通鍵の生成に際してよりセキュアに<br>行うためにPFSと呼ばれる機能を使用する場合のみフェーズ1と同様に<br>ネゴシエーションによりDHグループを決定する必要がある。 |
 
 ![IKEphase2](images/IKEphase2.png)  
+
+## 4. 演習
+ここまで説明してきたIPsec VPNを、Cisco Packet Tracerを用いてシミュレートします。
+### 4.1. Cisco IOS
+演習では、Ciscoルータ上でコマンドを入力して設定を行います。CiscoルータはCisco Internetwork Operating System (Cisco IOS)を搭載しており、大きくUser Exec Mode, Privileged Exec Mode, Global Configuration Modeの3つのModeがあります。
+
+![modes](images/modes.png)  
+
+| モード | 説明 |
+| ---- | ---- |
+| User Exec Mode | 基本的なコマンドのみ使用可能なモード |
+| Privileged Exec Mode | すべてのルータコマンドにアクセス可能なモード |
+| Global Configuration Mode | グローバルな設定を行うためのモード |
+| Specific Configuration Mode | 特定のインタフェースやコントローラを設定するモード |
+
+自分が今何のモードなのかは、コマンドを入力するところの左側に示されています。例えば"Router>"ならUser Exec Mode、 "Router#"ならPrivileged Exec Modeになっています。
+<br>
+<br>
+IOSでは'?'を入力すると実行可能なコマンド一覧が表示されます。これはコマンドの途中で入力すると、そこまで入力した文字列から可能なコマンドを列挙してくれたり、オプションの一覧を入手することもできる便利な記号です。コマンドを忘れたら'?'を使いましょう。(BashのTab補完に近い。)
+<br>
+<br>
+Cisco Packet Tracerを起動し、ルータ1941を配置して上記のコマンドを試してみよう。ルータをクリックし、"CLI"タブをクリックするとCLIに入ることができます。
+
+### 4.2. 演習の流れ
+やっとここまで来ました。演習は以下のステップで進みます。
+1. 各マシンの配置と設定
+1. ルータのセキュリティライセンスを有効化
+1. IKE phase 1 の設定
+1. IKE phase 2 の設定
+
+
+#### 4.2.1. 各マシンの配置と設定  
+![network](images/network.png)  
+
+| マシンの種類 | 名前 | 設定 |
+| ---- | ---- | ---- |
+| 1941(ルータ) | ISP | R1側:209.165.100.2<br>R3側:209.165.200.2 |
+| 1941(ルータ) | R1 | ISP側:209.165.100.1<br>PC-A側:192.168.1.1 |
+| 1941(ルータ) | R3 | ISP側:209.165.200.1<br>PC-C側:192.168.3.1 |
+| 2960(スイッチ) | any | ---- |
+| 2960(スイッチ) | any | ---- |
+| PC | PC-A | 192.168.1.10 |
+| PC | PC-B | 192.168.3.10 |
+
+- ISP  
+Global Configuration Modeで以下のコマンドを入力
+
+```
+!!Enter Specific Configuration Mode 
+interface g0/1
+
+!!Configure IP address
+ip address 209.165.200.2 255.255.255.0
+
+!!Bring up interface
+no shut
+
+!!Enter Specific Configuration Mode 
+interface g0/0
+
+!!Configure IP address
+ip address 209.165.100.2 255.255.255.0
+
+!!Bring up interface
+no shut
+
+!!Back to Global Configuration Mode
+exit
+```
+
+- R1
+Global Configuration Modeで以下のコマンドを入力
+
+```
+!!Configure machine name
+hostname R1
+!!Enter Specific Configuration Mode 
+interface g0/1
+!!Configure IP address
+ip address 192.168.1.1 255.255.255.0
+!!Bring up interface
+no shut
+!!Enter Specific Configuration Mode 
+interface g0/0
+!!Configure IP address
+ip address 209.165.100.1 255.255.255.0
+!!Bring up interface
+no shut
+!!Back to Global Configuration Mode
+exit
+!!Configure default route
+ip route 0.0.0.0 0.0.0.0 209.165.100.2
+```
+
+- R3  
+R1のコマンドを見ながら入力してみよう。
+
+- PC-A, PC-C  
+アイコンをクリック、"Config"タブの"FastEthernet0"をクリックし、IP Addressを入力。  
+"Config"タブの"Settings"内にあるGatewayにも適切なIP Addressを入力。
+
+#### 4.2.2. ルータのセキュリティライセンスを有効化
+Cisco IOSでは、基本的なIP機能に加えて高度なIP機能やIPセキュリティ機能を使用するには別途ライセンスを購入する必要があります。(購入時に付属しているライセンスもあるらしい。) IPsecを有効化するには対応するライセンスを取得してテクノロジーパッケージを有効化する必要があります。Cisco Packet TracerにはすでにIPsec用のライセンスがあります。
+<br>
+<br>
+現在有効なライセンスを確認しましょう。Privileged Exec Modeで`show version`と入力すると、最下部に下の図のような出力が見えるはずです。
+
+![license](images/license.png)  
+
+ライセンスを有効化させるコマンドは以下のとおりです。
+
+```
+(config)# license boot module [module-name] technology-package [package-name]
+```
+
+R1, R3でGlobal Configuration Modeで以下のコマンドを入力しパッケージを有効化させよう。
+
+```
+license boot module c1900 technology-package securityk9
+```
+
+起動時に有効になるように設定を上書きします。
+
+```
+copy run start
+```
+
+再起動します。
+```
+reload
+```
+
+再度`show version`コマンドで"security"行にパッケージが現れることを確認しましょう。
+
+#### 4.2.3. IKE phase 1 の設定
+IPsecによる通信を行うためには、先ず、ISAKMP SAを生成するための設定が必要になります。IKE phase 1のポリシーを定義するために、ISAKMP Configuration Modeに入ります。以下はR1の設定。<br>
+
+```
+crypto isakmp policy 10
+```
+
+ここの`10`はpriorityを示しており、1から10000までを指定することができます。低いほど優先度が高い。<br>
+<br>
+次に暗号化方式、認証方式、DHのビット係数(数値が大きいほど解読に時間がかかる)を指定します。ハッシュアルゴリズムはデフォルトで"sha"なので無視しています。<br>
+
+```
+encryption aes 256
+authentication pre-share
+group 5
+```
+
+次に、認証方式に`pre-share`を指定した場合、そのパスワードを設定します。以下の`[password]`を好きな文字列に変えてください。`address`にはIPsecのピア(R3)のIP Addressを指定します。
+
+```
+crypto isakmp key [password] address 209.165.200.1
+```
+
+R3にも同様の設定をしてください。
+
+#### 4.2.4. IKE phase 2 の設定
+IKE phase 2の設定では、生成されたISAKMP SA上でIPsec SAを生成するための設定が必要になります。IPsec SAを確立させるためには、セキュリティプロトコル、暗号化アルゴリズム、認証アルゴリズムのセット（トランスフォームセットと言う）を指定します。コマンドは以下のとおりです。
+
+```
+(config)# crypto ipsec transform-set [name] [transform1] [transform2]
+```
+
+まずR1で設定を行います。今回は`[name]`に`R1-R3`，`[transform1]`に`esp-aes 256`，`[transform2]`に`esp-sha-hmac`を指定します。
+
+```
+crypto ipsec transform-set R1-R3 esp-aes 256 esp-sha-hmac
+```
+
+
+
+
+
+
 
 
 
