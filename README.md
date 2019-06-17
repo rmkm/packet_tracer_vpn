@@ -134,9 +134,10 @@ Cisco Packet Tracerを起動し、ルータ1941を配置して上記のコマン
 1. ルータのセキュリティライセンスを有効化
 1. IKE phase 1 の設定
 1. IKE phase 2 の設定
+1. 疎通テスト
 
 
-#### 4.2.1. 各マシンの配置と設定  
+### 4.3. 各マシンの配置と設定  
 ![network](images/network.png)  
 
 | マシンの種類 | 名前 | 設定 |
@@ -203,10 +204,10 @@ ip route 0.0.0.0 0.0.0.0 209.165.100.2
 R1のコマンドを見ながら入力してみよう。
 
 - PC-A, PC-C  
-アイコンをクリック、"Config"タブの"FastEthernet0"をクリックし、IP Addressを入力。  
-"Config"タブの"Settings"内にあるGatewayにも適切なIP Addressを入力。
+アイコンをクリック、"Config"タブの"FastEthernet0"をクリックし、IPアドレスを入力。  
+"Config"タブの"Settings"内にあるGatewayにも適切なIPアドレスを入力。
 
-#### 4.2.2. ルータのセキュリティライセンスを有効化
+### 4.4. ルータのセキュリティライセンスを有効化
 Cisco IOSでは、基本的なIP機能に加えて高度なIP機能やIPセキュリティ機能を使用するには別途ライセンスを購入する必要があります。(購入時に付属しているライセンスもあるらしい。) IPsecを有効化するには対応するライセンスを取得してテクノロジーパッケージを有効化する必要があります。Cisco Packet TracerにはすでにIPsec用のライセンスがあります。
 <br>
 <br>
@@ -239,7 +240,7 @@ reload
 
 再度`show version`コマンドで"security"行にパッケージが現れることを確認しましょう。
 
-#### 4.2.3. IKE phase 1 の設定
+### 4.5. IKE phase 1 の設定
 IPsecによる通信を行うためには、先ず、ISAKMP SAを生成するための設定が必要になります。IKE phase 1のポリシーを定義するために、ISAKMP Configuration Modeに入ります。以下はR1の設定。<br>
 
 ```
@@ -256,7 +257,7 @@ authentication pre-share
 group 5
 ```
 
-次に、認証方式に`pre-share`を指定した場合、そのパスワードを設定します。以下の`[password]`を好きな文字列に変えてください。`address`にはIPsecのピア(R3)のIP Addressを指定します。
+次に、認証方式に`pre-share`を指定した場合、そのパスワードを設定します。以下の`[password]`を好きな文字列に変えてください。`address`にはIPsecのピア(R3)のIPアドレスを指定します。
 
 ```
 crypto isakmp key [password] address 209.165.200.1
@@ -264,26 +265,182 @@ crypto isakmp key [password] address 209.165.200.1
 
 R3にも同様の設定をしてください。
 
-#### 4.2.4. IKE phase 2 の設定
+### 4.6. IKE phase 2 の設定
 IKE phase 2の設定では、生成されたISAKMP SA上でIPsec SAを生成するための設定が必要になります。IPsec SAを確立させるためには、セキュリティプロトコル、暗号化アルゴリズム、認証アルゴリズムのセット（トランスフォームセットと言う）を指定します。コマンドは以下のとおりです。
 
 ```
 (config)# crypto ipsec transform-set [name] [transform1] [transform2]
 ```
 
-まずR1で設定を行います。今回は`[name]`に`R1-R3`，`[transform1]`に`esp-aes 256`，`[transform2]`に`esp-sha-hmac`を指定します。
+まずR1で設定を行います。今回は`[name]`に`R1-R3`、`[transform1]`に`esp-aes 256`、`[transform2]`に`esp-sha-hmac`を指定します。
 
 ```
 crypto ipsec transform-set R1-R3 esp-aes 256 esp-sha-hmac
 ```
 
+<br>
+次にどのトラフィックをIPsecの対象トラフィックとするのかを定義します。これをアクセスリスト (ACL) と呼び、以下のコマンドで定義します。
 
+```
+(config)# access-list [number] [permit|deny] [protocol] [source] [wildcard] [dest] [wildcard]
+```
 
+| コマンド引数 | 説明 |
+| ---- | ---- |
+| number | 拡張ACLの番号を100〜199の範囲で指定する |
+| permit or deny | 条件に合致したパケットを許可するか、拒否するかを決定する |
+| protocol | プロトコルの指定 (ip, icmp, tcp, udp など) |
+| source | 送信元IPアドレス |
+| dest | 宛先IPアドレス |
+| wildcard | ワイルドカードマスクの指定 |
 
+R1では今回の環境では以下のコマンドになります。
 
+```
+access-list 100 permit ip 192.168.1.0 0.0.0.255 192.168.3.0 0.0.0.255
+```
 
+<br>
+最後に、設定した「トランスフォームセット」と「暗号化対象のACL」をまとめたセット、「暗号マップ」を作成します。
+以下のコマンドで暗号マップ名`IPSEC-MAP`、トランスフォームセット`R1-R3`、ACL番号`100`の暗号マップを作成します。
 
+```
+!!Create crypto map name of "IPSEC-MAP", with priority of 10
+crypto map IPSEC-MAP 10 ipsec-isakmp
+set peer 209.165.200.1
+set pfs group5
+set security-association lifetime seconds 86400
+set transform-set R1-R3
+match address 100
+```
 
+設定した暗号マップを特定のインタフェースに設定します。
 
+```
+interface GigabitEthernet0/0
+crypto map IPSEC-MAP
+```
 
+以上でR1の設定が終わりました。4.6.の設定をR3にも設定しましょう。(IP アドレスの設定が若干異なります。)
+
+### 4.7. 疎通テスト
+ヒュー！ついに設定が終わりました。PC-AからPC-CにICMPパケットを送信してみましょう。(ping)
+
+1. 画面右下の"Simulation"ボタンをクリックすると"Simulation Panel"が出現します。
+1. "Show All/None"ボタンを押すたびにフィルターが切り替わります。Noneにします。
+1. "Edit Filters"をクリックし、"ICMP"をクリックします。
+1. 画面左上の手紙のアイコン![icon](images/icon.png)をクリックし、PC-A, PC-Cの順にクリックするとパケットの送信元と宛先を指定することができます。
+1. "Simulation Panel"にある再生ボタンを押すとパケットが送信されます。
+
+"Simulation Panel"に、各マシンを通過した時点でのパケットが順次表示されます。PC-Aが属するLAN内のパケットと、ISPを通過するパケットの中身を比較し、IPヘッダーがESPヘッダーと新しいIPヘッダーによってカプセル化されていることを確かめましょう。
+<br>
+"Simulation Panel"のパケットを削除したいときは、画面右下(本当に右下)の三角形アイコンをクリックすると、自分がセットしたパケットの一覧が出てくるので、"Delete"をクリックします。<br>
+<br>
+以上で演習終わり！
+
+### 4.8. Appendix
+
+#### R1に入力したコマンド
+基本設定
+
+```
+hostname R1
+interface g0/1
+ip address 192.168.1.1 255.255.255.0
+no shut
+interface g0/0
+ip address 209.165.100.1 255.255.255.0
+no shut
+exit
+ip route 0.0.0.0 0.0.0.0 209.165.100.2
+```
+
+ライセンス有効化
+
+```
+license boot module c1900 technology-package securityk9
+```
+
+IKE phase 1 and 2
+
+```
+crypto isakmp policy 10
+encryption aes 256
+authentication pre-share
+group 5
+!
+crypto isakmp key secretkey address 209.165.200.1
+!
+crypto ipsec transform-set R1-R3 esp-aes 256 esp-sha-hmac
+!
+access-list 100 permit ip 192.168.1.0 0.0.0.255 192.168.3.0 0.0.0.255
+!
+crypto map IPSEC-MAP 10 ipsec-isakmp 
+set peer 209.165.200.1
+set pfs group5
+set security-association lifetime seconds 86400
+set transform-set R1-R3 
+match address 100
+!
+interface GigabitEthernet0/0
+crypto map IPSEC-MAP
+```
+#### R3に入力したコマンド
+基本設定
+
+```
+hostname R3
+interface g0/1
+ip address 192.168.3.1 255.255.255.0
+no shut
+interface g0/0
+ip address 209.165.200.1 255.255.255.0
+no shut
+exit
+ip route 0.0.0.0 0.0.0.0 209.165.200.2
+```
+
+ライセンス有効化
+
+```
+license boot module c1900 technology-package securityk9
+```
+
+IKE phase 1 and 2
+
+```
+crypto isakmp policy 10
+encryption aes 256
+authentication pre-share
+group 5
+!
+crypto isakmp key secretkey address 209.165.200.1
+!
+crypto ipsec transform-set R3-R1 esp-aes 256 esp-sha-hmac
+!
+access-list 100 permit ip 192.168.3.0 0.0.0.255 192.168.1.0 0.0.0.255
+!
+crypto map IPSEC-MAP 10 ipsec-isakmp
+set peer 209.165.100.1
+set pfs group5
+set security-association lifetime seconds 86400
+set transform-set R3-R1
+match address 100
+!
+interface GigabitEthernet0/0
+crypto map IPSEC-MAP
+```
+#### ISPに入力したコマンド
+基本設定
+
+```
+hostname ISP
+interface g0/1
+ip address 209.165.200.2 255.255.255.0
+no shut
+interface g0/0
+ip address 209.165.100.2 255.255.255.0
+no shut
+exit
+```
 
