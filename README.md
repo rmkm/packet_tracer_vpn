@@ -91,6 +91,7 @@ IKEフェーズ1では、通信相手 (IPsec機器 )との認証を行うため�
 | 改良型公開鍵暗号 | 公開鍵暗号を改良した方式であり、公開鍵暗号よりも計算量が少ない方式。 |
 
 ![IKEphase1](images/IKEphase1.png)  
+https://www.infraexpert.com/study/ipsec9.html
 
 ### 3.4. IKE phase 2
 IKE フェーズ2では、ネゴシエーションによりIPsec SAに必要な以下のパラメータを決定します。
@@ -105,6 +106,7 @@ IKE フェーズ2では、ネゴシエーションによりIPsec SAに必要な�
 | DHグループ | フェーズ2では必須ではない。共通鍵の生成に際してよりセキュアに<br>行うためにPFSと呼ばれる機能を使用する場合のみフェーズ1と同様に<br>ネゴシエーションによりDHグループを決定する必要がある。 |
 
 ![IKEphase2](images/IKEphase2.png)  
+https://www.infraexpert.com/study/ipsec9.html
 
 ## 4. 演習
 ここまで説明してきたIPsec VPNを、Cisco Packet Tracerを用いてシミュレートします。
