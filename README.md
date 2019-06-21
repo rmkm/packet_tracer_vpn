@@ -62,8 +62,7 @@ IPsecによる通信はトンネルモードを利用していることが多い
 
 ## 3. IPsec VPN
 ### 3.1. Internet Key Exchange (IKE)
-ここからIPsec-VPNの流れを説明します。IPsec-VPNはVPNゲートウェイ間でコネクションを確立することで達成されます。このコネクションのことをSecurity Association (SA) と呼びます。IPsecの全ての通信はこのSAを使用する事になります。SAは一方通行のトンネルであるため、パケットを送受信するためには送信用のSA、受信用のSAの合計2つが必要になります。  
-このSAを自動的に生成、管理、更新することを可能にしたのがIKEです。認証用のセッション鍵 (HMAC) と暗号化用のセッション鍵のこれら両方の鍵の生成、交換、更新がIKEにより自動で行われます。IKEによるSAの生成はphase 1 とphase 2 のステップがあります。phase 1 では各種パラメータを交換しISAKMP SAを生成します。phase 2 ではそのISAKMP SA上で各種パラメータを交換してIPsec SAを生成します。  
+ここからIPsec-VPNの流れを説明します。IPsec-VPNはVPNゲートウェイ間でコネクションを確立することで達成されます。このコネクションのことをSecurity Association (SA) と呼びます。IPsecの全ての通信はこのSAを使用する事になります。このSAを自動的に生成、管理、更新することを可能にしたのがIKEです。認証用のセッション鍵 (HMAC) と暗号化用のセッション鍵のこれら両方の鍵の生成、交換、更新がIKEにより自動で行われます。IKEによるSAの生成はphase 1 とphase 2 のステップがあります。phase 1 では各種パラメータを交換しISAKMP SAを生成します。phase 2 ではそのISAKMP SA上で各種パラメータを交換してIPsec SAを生成します。  
 ISAKMP = Internet Security Association and Key Management Protocol  
 ### 3.2. ISAKMPメッセージのフォーマット
 ISAKMPメッセージは、IKE phase 1 、phase 2 のメッセージ交換の際に送受信されます。このメッセージはISAKMPヘッダとISAKMPペイロードで構成され、送信元、宛先ともUDPポート500を使用して伝送します。
@@ -91,7 +90,6 @@ IKEフェーズ1では、通信相手 (IPsec機器 )との認証を行うため�
 | 改良型公開鍵暗号 | 公開鍵暗号を改良した方式であり、公開鍵暗号よりも計算量が少ない方式。 |
 
 ![IKEphase1](images/IKEphase1.png)  
-https://www.infraexpert.com/study/ipsec9.html
 
 ### 3.4. IKE phase 2
 IKE フェーズ2では、ネゴシエーションによりIPsec SAに必要な以下のパラメータを決定します。
@@ -106,7 +104,6 @@ IKE フェーズ2では、ネゴシエーションによりIPsec SAに必要な�
 | DHグループ | フェーズ2では必須ではない。共通鍵の生成に際してよりセキュアに<br>行うためにPFSと呼ばれる機能を使用する場合のみフェーズ1と同様に<br>ネゴシエーションによりDHグループを決定する必要がある。 |
 
 ![IKEphase2](images/IKEphase2.png)  
-https://www.infraexpert.com/study/ipsec9.html
 
 ## 4. 演習
 ここまで説明してきたIPsec VPNを、Cisco Packet Tracerを用いてシミュレートします。
