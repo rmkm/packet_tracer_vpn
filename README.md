@@ -147,7 +147,7 @@ Cisco Packet Tracerを起動し、ルータ1941を配置して上記のコマン
 | 2960(スイッチ) | any | ---- |
 | 2960(スイッチ) | any | ---- |
 | PC | PC-A | 192.168.1.10 |
-| PC | PC-B | 192.168.3.10 |
+| PC | PC-C | 192.168.3.10 |
 
 - ISP  
 Global Configuration Modeで以下のコマンドを入力
